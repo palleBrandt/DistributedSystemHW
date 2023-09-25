@@ -57,11 +57,6 @@ func Server (IPv4 chan []int ) {
 	if shake3[1] == sequenceY + 1 { //Connection established
 		ackX = ackX + 1
 		fmt.Println("Connection established succesfully")
-		// request1 := <- IPv4
 	} else {fmt.Println("Connection access denied: error 406")}
-
-	
-
-	// Rækkefølge, ikke være dobbelt, tjekke alle pakker er der
 }
 
