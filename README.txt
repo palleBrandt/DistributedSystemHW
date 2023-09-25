@@ -16,7 +16,7 @@ e) Why is the 3-way handshake important?
    The handshake is important to ensure both parties are ready to transfer data. Because this is a full duplex, we must
    ensure that both client and server is ready - we do this by requesting and acknowleding. The other thing we need to do
    is star the sequence for both client and server. 
-   Clint sends request (sequenceStart)-> 
+   Clint sends request (sequenceStart)-> Server
 
    Connection is succesful
    Start the sequence 
