@@ -23,8 +23,8 @@ func Client (IPv4 chan []int) {
 			fmt.Println("sendt")
 			break loop
 		case <- time.After(2 * time.Second):
-			fmt.Println("client not response")
-			break loop
+			fmt.Println("Server not response")
+			break loop //Should restart the conection
 		}
 	}
 	shake2 := <- IPv4
@@ -49,19 +49,14 @@ func Server (IPv4 chan []int ) {
 			fmt.Println("sendt2")
 			break loop
 		case <- time.After(2 * time.Second):
-			fmt.Println("client not response")
-			break loop
+			fmt.Println("Client not response")
+			break loop //Should restart the conection
 		}
 	}
 	shake3 := <- IPv4
 	if shake3[1] == sequenceY + 1 { //Connection established
 		ackX = ackX + 1
 		fmt.Println("Connection established succesfully")
-		// request1 := <- IPv4
 	} else {fmt.Println("Connection access denied: error 406")}
-
-	
-
-	// Rækkefølge, ikke være dobbelt, tjekke alle pakker er der
 }
 
