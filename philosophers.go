@@ -35,6 +35,9 @@ func main() {
 	go phil(4, ch6, ch7)
 	go phil(5, ch8, ch9)
 
+	for {
+
+	}
 }
 
 func phil(no int, left chan struct{}, right chan struct{}) {
