@@ -2,17 +2,12 @@
  option go_package = "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto";
  package proto;
 
- service Server
+ service Chitty-Chat
 {
-    rpc SayHi (stream Greeting) returns (stream Farewell);
+    rpc Publish (Message) returns (google.protobuf.Empty);
+    rpc Broadcast (google.protobuf.Empty) return (stream Message)
 }
 
-message Greeting {
-    string clientName = 1;
-    string message = 2;
-    ...
-}
-
-message Farewell {
+message Message {
     string message = 1;
 }
