@@ -1,0 +1,18 @@
+ syntax = "proto3";
+ option go_package = "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto";
+ package proto;
+
+ service Server
+{
+    rpc SayHi (stream Greeting) returns (stream Farewell);
+}
+
+message Greeting {
+    string clientName = 1;
+    string message = 2;
+    ...
+}
+
+message Farewell {
+    string message = 1;
+}
