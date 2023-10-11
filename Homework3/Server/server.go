@@ -1,4 +1,4 @@
-package Server
+package main
 
 import (
 
@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"unicode/utf8"
+	"fmt"
 
 	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
 	"google.golang.org/grpc"
@@ -14,6 +15,7 @@ import (
 
 func main(){
 	list, _ := net.Listen("tcp", "localhost:5400")
+	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 
 
@@ -36,10 +38,11 @@ type Server struct {
 func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) {
     // some code here
 
-	if 128 < utf8.RuneCountInString(message.Message){
+	if 128 > utf8.RuneCountInString(message.Message){
 		s.streamMessage = append(s.streamMessage, message);
 		succesMessage := &gRPC.Message{
     	Message: "fjing fjong ding dong"}
+		fmt.Println(message.Message)
 		return succesMessage, nil
 	} else {
 		errorMessage := &gRPC.Message{
