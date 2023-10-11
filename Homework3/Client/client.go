@@ -20,6 +20,7 @@ func main(){
 	msg := &gRPC.Message{Message: "Dette er en test"}
 	returnMessage, error := server.Publish(context.Background(), msg)
 	fmt.Println(returnMessage.Message , error)
+	
 }
 
 func ConnectToServer(){
