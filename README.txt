@@ -23,3 +23,7 @@ e) Why is the 3-way handshake important?
    is star the sequence for both client and server. 
    This way both members knows traffic is recieved at the other end. 
    And by this we ensure that TCP is a connection-oriented, reliable, streaming-protocol
+
+go get -u google.golang.org/protobuf/cmd/protoc-gen-go
+export PATH=$PATH:$(go env GOPATH)/bin
+protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/template.proto

@@ -87,7 +87,7 @@ func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Mes
 }
 
 // Sends the message to all streams in the Cliens list.
-func (s *Server) broadcast (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
+func (s *Server) broadcast (message *gRPC.Message) error{
 	for _, client := range s.clients {
 			if err := client.Send(message); err != nil {
 				return err
