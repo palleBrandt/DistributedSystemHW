@@ -48,6 +48,7 @@ func (s *Server) Join (client *gRPC.Client, stream gRPC.ChittyChat_JoinServer) e
 	s.clients = append(s.clients, stream);
 	s.Unlock();
 
+
 	joinMessage := &gRPC.Message{AuthorName: Client.Name, Text: "Participant " + Client.Name + " joined Chitty-Chat at:"};
 	broadcast(joinMessage);
 
@@ -68,7 +69,7 @@ func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Mes
 
 		succesMessage := &gRPC.Message{
 			AuthorName: "Server",
-			Message: "fjing fjong ding dong"}
+			Message: "All good"}
 		
 		//Sends the message to all user, via the brodcast methode
 		broadcast(message);
