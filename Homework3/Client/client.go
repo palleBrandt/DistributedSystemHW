@@ -72,8 +72,10 @@ for{
 	func Listen (stream gRPC.ChittyChat_JoinClient){
 		for{
 			message, err := stream.Recv()
-			if err != nil && err != io.EOF {
-				fmt.Println(err);
+			if err != nil {
+				if err != io.EOF{
+					fmt.Println(err);
+				}
 			} else {
 				fmt.Println(message.AuthorName , ": " , message.Text);
 			}
