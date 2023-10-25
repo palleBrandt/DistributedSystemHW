@@ -6,7 +6,7 @@
  service ChittyChat
 {
     rpc Publish (Message) returns (Message);
-    rpc Broadcast (google.protobuf.Empty) returns (stream Message);
+    rpc Broadcast (stream Message) returns (google.protobuf.Empty);
 }
 
 message Message {
