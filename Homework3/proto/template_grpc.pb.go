@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChittyChatClient interface {
-	Join(ctx context.Context, in *Client, opts ...grpc.CallOption) (ChittyChat_JoinClient, error)
+	Join(ctx context.Context, opts ...grpc.CallOption) (ChittyChat_JoinClient, error)
 	Publish(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Message, error)
 }
 
@@ -34,28 +34,27 @@ func NewChittyChatClient(cc grpc.ClientConnInterface) ChittyChatClient {
 	return &chittyChatClient{cc}
 }
 
-func (c *chittyChatClient) Join(ctx context.Context, in *Client, opts ...grpc.CallOption) (ChittyChat_JoinClient, error) {
+func (c *chittyChatClient) Join(ctx context.Context, opts ...grpc.CallOption) (ChittyChat_JoinClient, error) {
 	stream, err := c.cc.NewStream(ctx, &ChittyChat_ServiceDesc.Streams[0], "/proto.ChittyChat/Join", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &chittyChatJoinClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
 	return x, nil
 }
 
 type ChittyChat_JoinClient interface {
+	Send(*Message) error
 	Recv() (*Message, error)
 	grpc.ClientStream
 }
 
 type chittyChatJoinClient struct {
 	grpc.ClientStream
+}
+
+func (x *chittyChatJoinClient) Send(m *Message) error {
+	return x.ClientStream.SendMsg(m)
 }
 
 func (x *chittyChatJoinClient) Recv() (*Message, error) {
@@ -79,7 +78,7 @@ func (c *chittyChatClient) Publish(ctx context.Context, in *Message, opts ...grp
 // All implementations must embed UnimplementedChittyChatServer
 // for forward compatibility
 type ChittyChatServer interface {
-	Join(*Client, ChittyChat_JoinServer) error
+	Join(ChittyChat_JoinServer) error
 	Publish(context.Context, *Message) (*Message, error)
 	mustEmbedUnimplementedChittyChatServer()
 }
@@ -88,7 +87,7 @@ type ChittyChatServer interface {
 type UnimplementedChittyChatServer struct {
 }
 
-func (UnimplementedChittyChatServer) Join(*Client, ChittyChat_JoinServer) error {
+func (UnimplementedChittyChatServer) Join(ChittyChat_JoinServer) error {
 	return status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
 func (UnimplementedChittyChatServer) Publish(context.Context, *Message) (*Message, error) {
@@ -108,15 +107,12 @@ func RegisterChittyChatServer(s grpc.ServiceRegistrar, srv ChittyChatServer) {
 }
 
 func _ChittyChat_Join_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Client)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChittyChatServer).Join(m, &chittyChatJoinServer{stream})
+	return srv.(ChittyChatServer).Join(&chittyChatJoinServer{stream})
 }
 
 type ChittyChat_JoinServer interface {
 	Send(*Message) error
+	Recv() (*Message, error)
 	grpc.ServerStream
 }
 
@@ -126,6 +122,14 @@ type chittyChatJoinServer struct {
 
 func (x *chittyChatJoinServer) Send(m *Message) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chittyChatJoinServer) Recv() (*Message, error) {
+	m := new(Message)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _ChittyChat_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -163,6 +167,7 @@ var ChittyChat_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Join",
 			Handler:       _ChittyChat_Join_Handler,
 			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "template.proto",

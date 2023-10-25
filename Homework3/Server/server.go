@@ -44,15 +44,12 @@ type Server struct {
 // Lets all users know that a new user has join. Sends a stream to the newly
 // join user, on which it now can recive new messages, and fills it with
 // all registered messages.
-func (s *Server) Join (client *gRPC.Client, stream gRPC.ChittyChat_JoinServer) error {
+func (s *Server) Join (stream gRPC.ChittyChat_JoinServer) error {
 
 	s.Lock();
 	s.clients = append(s.clients, stream);
 	s.Unlock();
 
-
-	joinMessage := &gRPC.Message{AuthorName: client.Name, Text: "Participant " + client.Name + " joined Chitty-Chat at:"};
-	s.broadcast(joinMessage);
 
 	//Fills the stream, which is returned to the client, with the list saved messages
 	for _,message := range s.savedMessages {
@@ -60,8 +57,27 @@ func (s *Server) Join (client *gRPC.Client, stream gRPC.ChittyChat_JoinServer) e
 			return  err;
 		}
 	}
-	return nil
+
+	for {
+        message, err := stream.Recv() // Receive a chat message from the client
+        if err != nil {
+            s.Lock()
+            for i, client := range s.clients {
+                if client == stream {
+                    s.clients = append(s.clients[:i], s.clients[i+1:]...) // Remove the disconnected client
+                    break
+                }
+            }
+            s.Unlock()
+            return err
+        }
+        s.Lock()
+        s.savedMessages = append(s.savedMessages, message) // Store the new message in the chat history
+        s.Unlock()
+        s.broadcast(message) // Broadcast the new message to all connected clients
+    }
 }
+
 
 // Recives messages from Users and provoke the broadcast methode to send the message
 // To all users

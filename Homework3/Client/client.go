@@ -1,16 +1,19 @@
 package main
 
 import (
-"context"
-"fmt"
-"log"
-"os/user"
-"io"
+	"bufio"
+	"context"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"os/user"
+	"strings"
 
-gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
+	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
 
-"google.golang.org/grpc"
-"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var ServerConn *grpc.ClientConn
@@ -31,11 +34,16 @@ ConnectToServer()
 //Initialize the stream
 stream := JoinChittyChat();
 
+joinMessage := &gRPC.Message{AuthorName: userName, Text: "Participant " + userName + " joined Chitty-Chat at:"};
+stream.Send(joinMessage)
+
 go Listen(stream);
 
+reader := bufio.NewReader(os.Stdin)
+
 for{
-	var inputText string
-	fmt.Scanln(&inputText)
+	var inputText, _ = reader.ReadString('\n')
+	inputText = strings.TrimRight(inputText,"\n")
 
 	publishMessage := &gRPC.Message{
 			AuthorName: userName,
@@ -57,9 +65,6 @@ for{
 	func JoinChittyChat() gRPC.ChittyChat_JoinClient{
 		stream, err := server.Join(
 			context.Background(),
-			&gRPC.Client{
-				Name: userName,
-			},
 		)
 		if err != nil {
 			fmt.Println(err);
