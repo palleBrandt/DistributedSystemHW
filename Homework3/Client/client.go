@@ -28,29 +28,50 @@ if err != nil{
 
 ConnectToServer()
 
-//Initialize the stream
-stream := JoinChittyChat();
+ client := gRPC.NewChittyChatClient(conn)
 
-go Listen(stream);
+    stream, err := client.Chat(context.Background())
+    if err != nil {
+        log.Fatalf("Error creating stream: %v", err)
+    }
+    defer stream.Close()
 
-for{
-	var inputText string
-	fmt.Scanln(&inputText)
+    // Start a goroutine to send messages to the server through the stream
+    go func() {
+        for {
+            var inputText string
+            fmt.Scanln(&inputText)
 
-	publishMessage := &gRPC.Message{
-			AuthorName: userName,
-			Text: inputText}
-	
-	returnMessage, err := server.Publish(
-		context.Background(),
-		publishMessage,
-	)
-		if err != nil{
-			fmt.Println(err)
-			} else {
-				fmt.Println(returnMessage)
-			}
-	}
+            message := &gRPC.Message{
+                AuthorName: "YourName", // Your name or username
+                Text:       inputText,
+            }
+
+            if err := stream.Send(message); err != nil {
+                log.Fatalf("Error sending message: %v", err)
+            }
+        }
+    }()
+
+    // Start a goroutine to receive messages from the server through the stream
+    go func() {
+        for {
+            message, err := stream.Recv()
+            if err != nil {
+                if err == io.EOF {
+                    // The stream has been closed by the server.
+                    break
+                }
+                log.Fatalf("Error receiving message: %v", err)
+            }
+
+            // Process and display the received message
+            fmt.Printf("%s: %s\n", message.AuthorName, message.Text)
+        }
+    }()
+
+    // Keep the main goroutine running
+    select {}
 }
 	
 	// Calls the Join method to join the server and return the stream
