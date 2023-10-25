@@ -1,14 +1,18 @@
  syntax = "proto3";
  option go_package = "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto";
  package proto;
- import "google/protobuf/empty.proto";
 
  service ChittyChat
 {
+    rpc Join (Client) returns (stream Message);
     rpc Publish (Message) returns (Message);
-    rpc Broadcast (stream Message) returns (google.protobuf.Empty);
 }
 
 message Message {
-    string message = 1;
+    string authorName = 1;
+    string text = 2;
+}
+
+message Client {
+    string name = 1;
 }

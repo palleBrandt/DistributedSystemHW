@@ -44,24 +44,5 @@ func conReady(s gRPC.ChittyChatClient) bool {
 	return ServerConn.GetState().String() == "READY"
 }
 
-//Implementation of Brodcast, which takes a list of messages from the server
-//And displays them in the terminal
-func () Broadcast (msgStream gRPC.ChittyChat_BroadcastServer) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
-	for {
-			message, err := msgStream.Recv()
-			//The io.EOF error means that the stream has reached the end of its list
-			//And we can close the stream and break the loop
-			if err == io.EOF {
-				return stream.Close
-				}
-			//Error is returend
-			if err != nil {
-					return err;
-				}
-			//If no error occur, the message is printed to the terminal
-			log.Println(message)
-	}
-	return nil
-}
 
 
