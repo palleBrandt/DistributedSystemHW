@@ -99,29 +99,6 @@ func (s *Server) Leave (ctx context.Context, client *gRPC.Client) (*gRPC.Message
 	return succesMessage, nil
 }
 
-// Recives messages from Users and provoke the broadcast methode to send the message
-// To all users
-// func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) { 
-
-// 	if 128 > utf8.RuneCountInString(message.Text){
-// 		s.savedMessages = append(s.savedMessages, message);
-
-// 		succesMessage := &gRPC.Message{
-// 			AuthorName: "Server",
-// 			Text: "All good"}
-		
-// 		//Sends the message to all user, via the brodcast methode
-// 		s.broadcast(message);
-
-// 		return succesMessage, nil
-// 	} else {
-// 		errorMessage := &gRPC.Message{
-// 			AuthorName: "Server",
-//     		Text: "Your shit is too long mf"}
-// 		return errorMessage, nil
-// 	}
-// }
-
 // Sends the message to all streams in the Cliens list.
 func (s *Server) broadcast (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
 	for _, client := range s.clients {
