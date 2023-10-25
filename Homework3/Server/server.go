@@ -29,31 +29,63 @@ func main(){
 
 
 type Server struct {
+	//Maakes it possible to lock the server
+	sync.Mutex
     // an interface that the server type needs to have
     gRPC.UnimplementedChittyChatServer
     savedMessages 					[]*gRPC.Message;
-    // here you can implement other fields that you want
+
+	// A list of all streams created between the clients and the server
+	clients							[]gRPC.ChittyChat_JoinServer
 }
 
-func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) { //ændre det til at den sender til en stream istedet for en liste
-    // some code here
+// Lets all users know that a new user has join. Sends a stream to the newly
+// join user, on which it now can recive new messages, and fills it with
+// all registered messages.
+func (s *Server) Join (client *gRPC.Client, stream gRPC.ChittyChat_JoinServer) error {
+
+	s.Lock();
+	s.clients = append(s.clients, stream);
+	s.Unlock();
+
+	joinMessage := &gRPC.Message{AuthorName: Client.Name, Text: "Participant " + Client.Name + " joined Chitty-Chat at:"};
+	broadcast(joinMessage);
+
+	//Fills the stream, which is returned to the client, with the list saved messages
+	for _,message := range savedMessages {
+		if err := stream.Send(message); err != null {
+			return  err;
+		}
+	}
+}
+
+// Recives messages from Users and provoke the broadcast methode to send the message
+// To all users
+func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) { 
 
 	if 128 > utf8.RuneCountInString(message.Message){
 		s.savedMessages = append(s.savedMessages, message);
+
 		succesMessage := &gRPC.Message{
-    	Message: "Server: fjing fjong ding dong"}
-		fmt.Println(message.Message)
+			AuthorName: "Server",
+			Message: "fjing fjong ding dong"}
+		
+		//Sends the message to all user, via the brodcast methode
+		broadcast(message);
+
 		return succesMessage, nil
 	} else {
 		errorMessage := &gRPC.Message{
-    	Message: "Server: Your shit is too long mf"}
+			AuthorName: "Server",
+    		Message: "Your shit is too long mf"}
 		return errorMessage, nil
 	}
 }
 
-func (s *Server) Broadcast (msgStream gRPC.ChittyChat_BroadcastServer) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
-	for _, message := range s.savedMessages {
-			if err := stream.Send(message); err != nil {
+// Sends the message to all streams in the Cliens list.
+func broadcast (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
+	for _, client := range s.clients {
+			if err := client.Send(message); err != nil {
 				return err
 			}
 	}

@@ -17,7 +17,7 @@ var server gRPC.ChittyChatClient
 
 func main(){
 	ConnectToServer()
-	msg := &gRPC.Message{Message: "Dette er en test"}
+	msg := &gRPC.Message{Text: "Dette er en test"}
 	returnMessage, error := server.Publish(context.Background(), msg)
 	fmt.Println(returnMessage.Message , error)
 }
