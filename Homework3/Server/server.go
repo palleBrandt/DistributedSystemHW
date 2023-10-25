@@ -7,7 +7,7 @@ import (
 	"context"
 	"net"
 	"unicode/utf8"
-	"fmt"
+	"sync"
 
 	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
 	"google.golang.org/grpc"
@@ -20,7 +20,9 @@ func main(){
 
 
 	server := &Server{
-		streamMessage: make ([]*gRPC.Message, 0,2)}
+		savedMessages: make ([]*gRPC.Message, 0,200),
+		clients: make ([]gRPC.ChittyChat_JoinServer, 0, 200)}
+		
 	
 	gRPC.RegisterChittyChatServer(grpcServer, server)
 	grpcServer.Serve(list)
@@ -49,42 +51,43 @@ func (s *Server) Join (client *gRPC.Client, stream gRPC.ChittyChat_JoinServer) e
 	s.Unlock();
 
 
-	joinMessage := &gRPC.Message{AuthorName: Client.Name, Text: "Participant " + Client.Name + " joined Chitty-Chat at:"};
-	broadcast(joinMessage);
+	joinMessage := &gRPC.Message{AuthorName: client.Name, Text: "Participant " + client.Name + " joined Chitty-Chat at:"};
+	s.broadcast(joinMessage);
 
 	//Fills the stream, which is returned to the client, with the list saved messages
-	for _,message := range savedMessages {
-		if err := stream.Send(message); err != null {
+	for _,message := range s.savedMessages {
+		if err := stream.Send(message); err != nil {
 			return  err;
 		}
 	}
+	return nil
 }
 
 // Recives messages from Users and provoke the broadcast methode to send the message
 // To all users
 func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) { 
 
-	if 128 > utf8.RuneCountInString(message.Message){
+	if 128 > utf8.RuneCountInString(message.Text){
 		s.savedMessages = append(s.savedMessages, message);
 
 		succesMessage := &gRPC.Message{
 			AuthorName: "Server",
-			Message: "All good"}
+			Text: "All good"}
 		
 		//Sends the message to all user, via the brodcast methode
-		broadcast(message);
+		s.broadcast(message);
 
 		return succesMessage, nil
 	} else {
 		errorMessage := &gRPC.Message{
 			AuthorName: "Server",
-    		Message: "Your shit is too long mf"}
+    		Text: "Your shit is too long mf"}
 		return errorMessage, nil
 	}
 }
 
 // Sends the message to all streams in the Cliens list.
-func broadcast (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
+func (s *Server) broadcast (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
 	for _, client := range s.clients {
 			if err := client.Send(message); err != nil {
 				return err
