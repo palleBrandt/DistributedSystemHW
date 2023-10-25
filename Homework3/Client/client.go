@@ -9,6 +9,9 @@ import (
 	"os"
 	"os/user"
 	"strings"
+	"unicode/utf8"
+	"os/signal"
+    "syscall"
 
 	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
 
@@ -21,49 +24,40 @@ var server gRPC.ChittyChatClient
 var userName string
 
 func main(){
-
-user, err := user.Current()
-if err != nil{
-	fmt.Println(err.Error())
-} else {
-	userName = user.Username
-}
-
-ConnectToServer()
-
-//Initialize the stream
-stream := JoinChittyChat();
-
-joinMessage := &gRPC.Message{AuthorName: userName, Text: "Participant " + userName + " joined Chitty-Chat at:"};
-stream.Send(joinMessage)
-
-go Listen(stream);
-
-reader := bufio.NewReader(os.Stdin)
-
-for{
-	var inputText, _ = reader.ReadString('\n')
-	inputText = strings.TrimRight(inputText,"\n")
-
-	publishMessage := &gRPC.Message{
-			AuthorName: userName,
-			Text: inputText}
-	
-	returnMessage, err := server.Publish(
-		context.Background(),
-		publishMessage,
-	)
-		if err != nil{
-			fmt.Println(err)
-			} else {
-				fmt.Println(returnMessage)
-			}
+	user, err := user.Current()
+	if err != nil{
+		fmt.Println(err.Error())
+	} else {
+		userName = user.Username
 	}
+
+	ClientUser := &gRPC.Client{Name: userName}
+
+	ConnectToServer()
+	server.Join(context.Background(),ClientUser)
+
+	//Initialize the stream
+	stream := SubscribeChittyChat();
+
+	go Listen(stream);
+
+	go Publish(stream);
+
+	c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        <-c
+        server.Leave(context.Background(),ClientUser)
+        os.Exit(1)
+    }()
+
+	select {}
+
 }
 	
 	// Calls the Join method to join the server and return the stream
-	func JoinChittyChat() gRPC.ChittyChat_JoinClient{
-		stream, err := server.Join(
+	func SubscribeChittyChat() gRPC.ChittyChat_SubscribeClient{
+		stream, err := server.Subscribe(
 			context.Background(),
 		)
 		if err != nil {
@@ -74,7 +68,7 @@ for{
 	}
 	
 	
-	func Listen (stream gRPC.ChittyChat_JoinClient){
+	func Listen (stream gRPC.ChittyChat_SubscribeClient){
 		for{
 			message, err := stream.Recv()
 			if err != nil {
@@ -86,6 +80,28 @@ for{
 			}
 		}
 	}
+
+	func Publish (stream gRPC.ChittyChat_SubscribeClient){
+		reader := bufio.NewReader(os.Stdin)
+
+		for{
+			var inputText, _ = reader.ReadString('\n')
+			inputText = strings.TrimRight(inputText,"\n")
+
+			if 128 > utf8.RuneCountInString(inputText){
+				publishMessage := &gRPC.Message{
+					AuthorName: userName,
+					Text: inputText}
+			
+				stream.Send(publishMessage)
+			} else {
+				fmt.Println("!Maximum 128 characters allowed!")
+			}
+
+		}
+			
+	}
+	
 	
 	func ConnectToServer(){
 		var opts []grpc.DialOption

@@ -6,7 +6,6 @@ import (
 	// followed by the path to the folder the proto file is in.
 	"context"
 	"net"
-	"unicode/utf8"
 	"sync"
 
 	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
@@ -21,7 +20,7 @@ func main(){
 
 	server := &Server{
 		savedMessages: make ([]*gRPC.Message, 0,200),
-		clients: make ([]gRPC.ChittyChat_JoinServer, 0, 200)}
+		clients: make ([]gRPC.ChittyChat_SubscribeServer, 0, 200)}
 		
 	
 	gRPC.RegisterChittyChatServer(grpcServer, server)
@@ -38,13 +37,13 @@ type Server struct {
     savedMessages 					[]*gRPC.Message;
 
 	// A list of all streams created between the clients and the server
-	clients							[]gRPC.ChittyChat_JoinServer
+	clients							[]gRPC.ChittyChat_SubscribeServer
 }
 
 // Lets all users know that a new user has join. Sends a stream to the newly
 // join user, on which it now can recive new messages, and fills it with
 // all registered messages.
-func (s *Server) Join (stream gRPC.ChittyChat_JoinServer) error {
+func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
 
 	s.Lock();
 	s.clients = append(s.clients, stream);
@@ -78,29 +77,50 @@ func (s *Server) Join (stream gRPC.ChittyChat_JoinServer) error {
     }
 }
 
+func (s *Server) Join (ctx context.Context, client *gRPC.Client) (*gRPC.Message, error){ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
+	joinMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + client.Name + " joined Chitty-Chat at Lamport time L"};
+	s.broadcast(joinMessage)
+
+	succesMessage := &gRPC.Message{
+			AuthorName: "Server",
+			Text: "200 Join Succesfull"}
+
+	return succesMessage, nil
+}
+
+func (s *Server) Leave (ctx context.Context, client *gRPC.Client) (*gRPC.Message, error){ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
+	leaveMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + client.Name + " left Chitty-Chat at Lamport time L"};
+	s.broadcast(leaveMessage)
+
+	succesMessage := &gRPC.Message{
+			AuthorName: "Server",
+			Text: "200 Leave Succesfull"}
+
+	return succesMessage, nil
+}
 
 // Recives messages from Users and provoke the broadcast methode to send the message
 // To all users
-func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) { 
+// func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) { 
 
-	if 128 > utf8.RuneCountInString(message.Text){
-		s.savedMessages = append(s.savedMessages, message);
+// 	if 128 > utf8.RuneCountInString(message.Text){
+// 		s.savedMessages = append(s.savedMessages, message);
 
-		succesMessage := &gRPC.Message{
-			AuthorName: "Server",
-			Text: "All good"}
+// 		succesMessage := &gRPC.Message{
+// 			AuthorName: "Server",
+// 			Text: "All good"}
 		
-		//Sends the message to all user, via the brodcast methode
-		s.broadcast(message);
+// 		//Sends the message to all user, via the brodcast methode
+// 		s.broadcast(message);
 
-		return succesMessage, nil
-	} else {
-		errorMessage := &gRPC.Message{
-			AuthorName: "Server",
-    		Text: "Your shit is too long mf"}
-		return errorMessage, nil
-	}
-}
+// 		return succesMessage, nil
+// 	} else {
+// 		errorMessage := &gRPC.Message{
+// 			AuthorName: "Server",
+//     		Text: "Your shit is too long mf"}
+// 		return errorMessage, nil
+// 	}
+// }
 
 // Sends the message to all streams in the Cliens list.
 func (s *Server) broadcast (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message

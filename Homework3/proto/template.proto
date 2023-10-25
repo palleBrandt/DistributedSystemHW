@@ -4,8 +4,9 @@
 
  service ChittyChat
 {
-    rpc Join (stream Message) returns (stream Message);
-    rpc Publish (Message) returns (Message);
+    rpc Subscribe (stream Message) returns (stream Message);
+    rpc Join (Client) returns (Message);
+    rpc Leave (Client) returns (Message);
 }
 
 message Message {
