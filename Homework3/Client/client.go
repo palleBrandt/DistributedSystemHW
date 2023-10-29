@@ -42,7 +42,7 @@ ConnectToServer()
             var inputText string
             fmt.Scanln(&inputText)
             message := &gRPC.Message{
-                AuthorName: "YourName", // Your name or username
+                AuthorName: userName, // Your name or username
                 Text:       inputText,
             }
 

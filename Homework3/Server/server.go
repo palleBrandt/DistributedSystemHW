@@ -4,9 +4,9 @@ import (
 
 	// This has to be the same as the go.mod module,
 	// followed by the path to the folder the proto file is in.
-	"context"
+	
 	"net"
-	"unicode/utf8"
+	
 	"sync"
 
 	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
@@ -20,7 +20,7 @@ func main(){
 
 	server := &Server{
 		savedMessages: make ([]*gRPC.Message, 0,200),
-		clients: make ([]*gRPC.Client, 0, 200)}
+		clients: make ([]gRPC.ChittyChat_JoinServer, 0, 200)}
 	
 	gRPC.RegisterChittyChatServer(grpcServer, server)
 	grpcServer.Serve(list)
@@ -34,7 +34,7 @@ type Server struct {
     savedMessages 					[]*gRPC.Message;
 
 	// A list of all streams created between the clients and the server
-	clients							[]*gRPC.Client
+	clients							[]gRPC.ChittyChat_JoinServer
 }
 
 // Lets all users know that a new user has join. Sends a stream to the newly
@@ -61,6 +61,22 @@ func (s *Server) Join (client *gRPC.Client, stream gRPC.ChittyChat_JoinServer) e
 
 // In your Server type, add a new method for the Chat streaming RPC.
 func (s *Server) Chat(stream gRPC.ChittyChat_ChatServer) error {
+
+	s.Lock();
+	s.clients = append(s.clients, stream);
+	s.Unlock();
+
+
+	joinMessage := &gRPC.Message{AuthorName: "server", Text: "Participant Markus, joined Chitty-Chat at:"};
+	s.broadcast(joinMessage);
+
+	//Fills the stream, which is returned to the client, with the list saved messages
+	for _,message := range s.savedMessages {
+		if err := stream.Send(message); err != nil {
+			return  err;
+		}
+	}
+
     // Create a channel to handle incoming client messages.
     messageChan := make(chan *gRPC.Message)
 
@@ -72,6 +88,7 @@ func (s *Server) Chat(stream gRPC.ChittyChat_ChatServer) error {
                 close(messageChan)
                 return
             }
+			s.savedMessages.add(message)
             messageChan <- message
         }
     }()
@@ -82,29 +99,6 @@ func (s *Server) Chat(stream gRPC.ChittyChat_ChatServer) error {
         s.broadcast(message)
     }
     return nil
-}
-
-// Recives messages from Users and provoke the broadcast methode to send the message
-// To all users
-func (s *Server) Publish (ctx context.Context, message *gRPC.Message) (*gRPC.Message, error) { 
-
-	if 128 > utf8.RuneCountInString(message.Text){
-		s.savedMessages = append(s.savedMessages, message);
-
-		succesMessage := &gRPC.Message{
-			AuthorName: "Server",
-			Text: "All good"}
-		
-		//Sends the message to all user, via the brodcast methode
-		s.broadcast(message);
-
-		return succesMessage, nil
-	} else {
-		errorMessage := &gRPC.Message{
-			AuthorName: "Server",
-    		Text: "Your shit is too long mf"}
-		return errorMessage, nil
-	}
 }
 
 // Sends the message to all streams in the Cliens list.
