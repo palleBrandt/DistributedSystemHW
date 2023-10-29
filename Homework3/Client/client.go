@@ -41,7 +41,6 @@ ConnectToServer()
         for {
             var inputText string
             fmt.Scanln(&inputText)
-
             message := &gRPC.Message{
                 AuthorName: "YourName", // Your name or username
                 Text:       inputText,
@@ -89,19 +88,6 @@ ConnectToServer()
 		return stream;
 	}
 	
-	
-	func Listen (stream gRPC.ChittyChat_JoinClient){
-		for{
-			message, err := stream.Recv()
-			if err != nil {
-				if err != io.EOF{
-					fmt.Println(err);
-				}
-			} else {
-				fmt.Println(message.AuthorName , ": " , message.Text);
-			}
-		}
-	}
 	
 	func ConnectToServer(){
 		var opts []grpc.DialOption

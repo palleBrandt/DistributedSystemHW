@@ -38,7 +38,7 @@ type Server struct {
     savedMessages 					[]*gRPC.Message;
 
 	// A list of all streams created between the clients and the server
-	clients							[]gRPC.ChittyChat_JoinServer
+	clients							[]*gRPC.Client
 }
 
 // Lets all users know that a new user has join. Sends a stream to the newly
@@ -61,6 +61,31 @@ func (s *Server) Join (client *gRPC.Client, stream gRPC.ChittyChat_JoinServer) e
 		}
 	}
 	return nil
+}
+
+// In your Server type, add a new method for the Chat streaming RPC.
+func (s *Server) Chat(stream gRPC.ChittyChat_ChatServer) error {
+    // Create a channel to handle incoming client messages.
+    messageChan := make(chan *gRPC.Message)
+
+    // Goroutine to handle incoming messages from the client.
+    go func() {
+        for {
+            message, err := stream.Recv()
+            if err != nil {
+                close(messageChan)
+                return
+            }
+            messageChan <- message
+        }
+    }()
+
+    // Now, you can use the messageChan to receive messages from clients and broadcast them.
+    for message := range messageChan {
+        // Handle the received message and broadcast it to other clients.
+        s.broadcast(message)
+    }
+    return nil
 }
 
 // Recives messages from Users and provoke the broadcast methode to send the message
