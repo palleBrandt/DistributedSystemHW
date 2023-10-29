@@ -28,13 +28,13 @@ if err != nil{
 
 ConnectToServer()
 
- client := gRPC.NewChittyChatClient(conn)
+ client := gRPC.NewChittyChatClient(ServerConn)
 
     stream, err := client.Chat(context.Background())
     if err != nil {
         log.Fatalf("Error creating stream: %v", err)
     }
-    defer stream.Close()
+    defer ServerConn.Close()
 
     // Start a goroutine to send messages to the server through the stream
     go func() {

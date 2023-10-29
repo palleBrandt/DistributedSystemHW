@@ -18,17 +18,13 @@ func main(){
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 
-
 	server := &Server{
 		savedMessages: make ([]*gRPC.Message, 0,200),
-		clients: make ([]gRPC.ChittyChat_JoinServer, 0, 200)}
-		
+		clients: make ([]*gRPC.Client, 0, 200)}
 	
 	gRPC.RegisterChittyChatServer(grpcServer, server)
 	grpcServer.Serve(list)
 }
-
-
 
 type Server struct {
 	//Maakes it possible to lock the server
