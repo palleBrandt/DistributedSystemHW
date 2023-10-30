@@ -15,7 +15,7 @@ import (
 )
 
 func main(){
-	list, _ := net.Listen("tcp", "10.26.26.4:5400")
+	list, _ := net.Listen("tcp", "localhost:5400")
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 

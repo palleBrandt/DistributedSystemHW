@@ -118,7 +118,7 @@ func ConnectToServer(){
 		grpc.WithTransportCredentials(insecure.NewCredentials()),	
 	)
 	
-	conn, err := grpc.Dial("10.26.26.4:5400", opts...)
+	conn, err := grpc.Dial("localhost:5400", opts...)
 	if err != nil {
 		log.Printf("Fail to Dial : %v", err)
 		return
