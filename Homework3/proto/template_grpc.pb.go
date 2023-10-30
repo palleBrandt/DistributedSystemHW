@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.24.4
-// source: template.proto
+// source: proto/template.proto
 
 package proto
 
@@ -23,8 +23,6 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChittyChatClient interface {
 	Subscribe(ctx context.Context, opts ...grpc.CallOption) (ChittyChat_SubscribeClient, error)
-	Join(ctx context.Context, in *Client, opts ...grpc.CallOption) (*Message, error)
-	Leave(ctx context.Context, in *Client, opts ...grpc.CallOption) (*Message, error)
 }
 
 type chittyChatClient struct {
@@ -66,31 +64,11 @@ func (x *chittyChatSubscribeClient) Recv() (*Message, error) {
 	return m, nil
 }
 
-func (c *chittyChatClient) Join(ctx context.Context, in *Client, opts ...grpc.CallOption) (*Message, error) {
-	out := new(Message)
-	err := c.cc.Invoke(ctx, "/proto.ChittyChat/Join", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chittyChatClient) Leave(ctx context.Context, in *Client, opts ...grpc.CallOption) (*Message, error) {
-	out := new(Message)
-	err := c.cc.Invoke(ctx, "/proto.ChittyChat/Leave", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ChittyChatServer is the server API for ChittyChat service.
 // All implementations must embed UnimplementedChittyChatServer
 // for forward compatibility
 type ChittyChatServer interface {
 	Subscribe(ChittyChat_SubscribeServer) error
-	Join(context.Context, *Client) (*Message, error)
-	Leave(context.Context, *Client) (*Message, error)
 	mustEmbedUnimplementedChittyChatServer()
 }
 
@@ -100,12 +78,6 @@ type UnimplementedChittyChatServer struct {
 
 func (UnimplementedChittyChatServer) Subscribe(ChittyChat_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
-}
-func (UnimplementedChittyChatServer) Join(context.Context, *Client) (*Message, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
-}
-func (UnimplementedChittyChatServer) Leave(context.Context, *Client) (*Message, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Leave not implemented")
 }
 func (UnimplementedChittyChatServer) mustEmbedUnimplementedChittyChatServer() {}
 
@@ -146,58 +118,13 @@ func (x *chittyChatSubscribeServer) Recv() (*Message, error) {
 	return m, nil
 }
 
-func _ChittyChat_Join_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Client)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChittyChatServer).Join(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.ChittyChat/Join",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChittyChatServer).Join(ctx, req.(*Client))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ChittyChat_Leave_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Client)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChittyChatServer).Leave(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.ChittyChat/Leave",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChittyChatServer).Leave(ctx, req.(*Client))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ChittyChat_ServiceDesc is the grpc.ServiceDesc for ChittyChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ChittyChat_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.ChittyChat",
 	HandlerType: (*ChittyChatServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Join",
-			Handler:    _ChittyChat_Join_Handler,
-		},
-		{
-			MethodName: "Leave",
-			Handler:    _ChittyChat_Leave_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Subscribe",
@@ -206,5 +133,5 @@ var ChittyChat_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "template.proto",
+	Metadata: "proto/template.proto",
 }

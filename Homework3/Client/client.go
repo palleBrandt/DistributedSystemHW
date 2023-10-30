@@ -10,8 +10,6 @@ import (
 	"os/user"
 	"strings"
 	"unicode/utf8"
-	"os/signal"
-    "syscall"
 
 	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
 
@@ -22,8 +20,10 @@ import (
 var ServerConn *grpc.ClientConn
 var server gRPC.ChittyChatClient
 var userName string
+var t int32
 
 func main(){
+	t = 0;
 	user, err := user.Current()
 	if err != nil{
 		fmt.Println(err.Error())
@@ -31,25 +31,20 @@ func main(){
 		userName = user.Username
 	}
 
-	ClientUser := &gRPC.Client{Name: userName}
+	// ClientUser := &gRPC.Client{Name: userName}
 
 	ConnectToServer()
-	server.Join(context.Background(),ClientUser)
-
 	//Initialize the stream
 	stream := SubscribeChittyChat();
+	joinMessage := &gRPC.Message{
+					AuthorName: userName,
+					Text: ""}
+			
+				stream.Send(joinMessage)
 
 	go Listen(stream);
 
 	go Publish(stream);
-
-	c := make(chan os.Signal, 1)
-    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-    go func() {
-        <-c
-        server.Leave(context.Background(),ClientUser)
-        os.Exit(1)
-    }()
 
 	select {}
 
@@ -76,6 +71,7 @@ func main(){
 					fmt.Println(err);
 				}
 			} else {
+				t = maxInt32(t, message.LamportTimestamp) + 1;
 				fmt.Println(message.AuthorName , ": " , message.Text);
 			}
 		}
@@ -89,9 +85,11 @@ func main(){
 			inputText = strings.TrimRight(inputText,"\n")
 
 			if 128 > utf8.RuneCountInString(inputText){
+				t = t+1;
 				publishMessage := &gRPC.Message{
 					AuthorName: userName,
-					Text: inputText}
+					Text: inputText,
+					LamportTimestamp: t}
 			
 				stream.Send(publishMessage)
 			} else {
@@ -125,6 +123,12 @@ func main(){
 		return ServerConn.GetState().String() == "READY"
 	}
 	
+	func maxInt32(a, b int32) int32 {
+    if a > b {
+        return a
+    }
+    return b
+}
 	
 	
 	

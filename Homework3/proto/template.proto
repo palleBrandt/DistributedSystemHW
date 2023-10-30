@@ -5,13 +5,12 @@
  service ChittyChat
 {
     rpc Subscribe (stream Message) returns (stream Message);
-    rpc Join (Client) returns (Message);
-    rpc Leave (Client) returns (Message);
 }
 
 message Message {
     string authorName = 1;
     string text = 2;
+    int32 lamportTimestamp = 3;
 }
 
 message Client {
