@@ -8,19 +8,20 @@ import (
 	"net"
 	"sync"
 	"fmt"
+	"strconv"
 
 	gRPC "github.com/palleBrandt/DistributedSystemHW/tree/main/Homework3/proto"
 	"google.golang.org/grpc"
 )
 
 func main(){
-	list, _ := net.Listen("tcp", "localhost:5400")
+	list, _ := net.Listen("tcp", "10.26.26.4:5400")
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 
 
 	server := &Server{
-		savedMessages: make ([]*gRPC.Message, 0,200),
+		t: 0,
 		clients: make ([]gRPC.ChittyChat_SubscribeServer, 0, 200)}
 		
 	
@@ -35,10 +36,10 @@ type Server struct {
 	sync.Mutex
     // an interface that the server type needs to have
     gRPC.UnimplementedChittyChatServer
-    savedMessages 					[]*gRPC.Message;
 
 	// A list of all streams created between the clients and the server
-	clients							[]gRPC.ChittyChat_SubscribeServer
+	clients	[]gRPC.ChittyChat_SubscribeServer
+	t int32;
 }
 
 // Lets all users know that a new user has join. Sends a stream to the newly
@@ -56,14 +57,6 @@ func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
         }
 	s.Join(clientMessage);
 
-
-	//Fills the stream, which is returned to the client, with the list saved messages
-	for _,message := range s.savedMessages {
-		if err := stream.Send(message); err != nil {
-			return  err;
-		}
-	}
-
 	for {
         message, err := stream.Recv() // Receive a chat message from the client
         if err != nil {
@@ -79,28 +72,35 @@ func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
             return err
         }
         s.Lock()
-        s.savedMessages = append(s.savedMessages, message) // Store the new message in the chat history
+		//Increments timestamp for recieving a message
+		s.t = maxInt32(s.t, message.LamportTimestamp) + 1;
         s.Unlock()
+		//Increments timestamp for sending a message
+		s.t ++;
         s.broadcast(message) // Broadcast the new message to all connected clients
     }
 }
 
 // Sends the message to all streams in the Cliens list.
-func (s *Server) Join (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
-	joinMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " joined Chitty-Chat at Lamport time L"};
+func (s *Server) Join (message *gRPC.Message) error{
+	//Increments timestamp for when a client joins the server
+	s.t ++;
+	joinMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " joined Chitty-Chat at Lamport time: " + strconv.FormatInt(int64(s.t), 10)};
 	s.broadcast(joinMessage);
 	return nil
 }
 
 // Sends the message to all streams in the Cliens list.
-func (s *Server) Leave (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
-	leaveMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " left Chitty-Chat at Lamport time L"};
+func (s *Server) Leave (message *gRPC.Message) error{ 
+	//Increments timestamp for when a client leaves the server
+	s.t ++;
+	leaveMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " left Chitty-Chat at Lamport time: " + strconv.FormatInt(int64(s.t), 10)};
 	s.broadcast(leaveMessage);
 	return nil
 }
 
 // Sends the message to all streams in the Cliens list.
-func (s *Server) broadcast (message *gRPC.Message) error{ // skaal kaldes a man og åbne en stream der ikke lukkes før severen bliver slukket, denne stream skal client tappe ind på og lytte på om der kommer en message
+func (s *Server) broadcast (message *gRPC.Message) error{
 	for _, client := range s.clients {
 			if err := client.Send(message); err != nil {
 				return err
@@ -108,3 +108,10 @@ func (s *Server) broadcast (message *gRPC.Message) error{ // skaal kaldes a man 
 	}
 	return nil
 }
+
+func maxInt32(a, b int32) int32 {
+		if a > b {
+			return a
+		}
+		return b
+	}

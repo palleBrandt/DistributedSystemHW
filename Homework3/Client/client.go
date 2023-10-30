@@ -23,7 +23,10 @@ var userName string
 var t int32
 
 func main(){
+	// set lokal logical timestamp 
 	t = 0;
+
+	//Extracting the username
 	user, err := user.Current()
 	if err != nil{
 		fmt.Println(err.Error())
@@ -31,8 +34,11 @@ func main(){
 		userName = user.Username
 	}
 
-	// ClientUser := &gRPC.Client{Name: userName}
+	//Setup log
+	file, _:= os.Create("ChittyChatLog.txt")
+	log.SetOutput(file);
 
+	// ClientUser := &gRPC.Client{Name: userName}
 	ConnectToServer()
 	//Initialize the stream
 	stream := SubscribeChittyChat();
@@ -47,88 +53,94 @@ func main(){
 	go Publish(stream);
 
 	select {}
-
 }
 	
-	// Calls the Join method to join the server and return the stream
-	func SubscribeChittyChat() gRPC.ChittyChat_SubscribeClient{
-		stream, err := server.Subscribe(
-			context.Background(),
-		)
-		if err != nil {
-			fmt.Println(err);
-		}
-		fmt.Println("You are now connected to Chitty-Chat, type away as hard as you are :)")
-		return stream;
+// Calls the Join method to join the server and return the stream
+func SubscribeChittyChat() gRPC.ChittyChat_SubscribeClient{
+	stream, err := server.Subscribe(
+		context.Background(),
+	)
+	if err != nil {
+		fmt.Println(err);
 	}
-	
-	
-	func Listen (stream gRPC.ChittyChat_SubscribeClient){
-		for{
-			message, err := stream.Recv()
-			if err != nil {
-				if err != io.EOF{
-					fmt.Println(err);
-				}
-			} else {
-				t = maxInt32(t, message.LamportTimestamp) + 1;
-				fmt.Println(message.AuthorName , ": " , message.Text);
-			}
-		}
-	}
-
-	func Publish (stream gRPC.ChittyChat_SubscribeClient){
-		reader := bufio.NewReader(os.Stdin)
-
-		for{
-			var inputText, _ = reader.ReadString('\n')
-			inputText = strings.TrimRight(inputText,"\n")
-
-			if 128 > utf8.RuneCountInString(inputText){
-				t = t+1;
-				publishMessage := &gRPC.Message{
-					AuthorName: userName,
-					Text: inputText,
-					LamportTimestamp: t}
-			
-				stream.Send(publishMessage)
-			} else {
-				fmt.Println("!Maximum 128 characters allowed!")
-			}
-
-		}
-			
-	}
-	
-	
-	func ConnectToServer(){
-		var opts []grpc.DialOption
-		opts = append(
-			opts, grpc.WithBlock(), 
-			grpc.WithTransportCredentials(insecure.NewCredentials()),	
-		)
-		
-		conn, err := grpc.Dial(":5400", opts...)
-		if err != nil {
-			log.Printf("Fail to Dial : %v", err)
-			return
-		}
-		
-		server = gRPC.NewChittyChatClient(conn)
-		ServerConn = conn
-		log.Println("the connection is: ", conn.GetState().String())
-	}
-	
-	func conReady(s gRPC.ChittyChatClient) bool {
-		return ServerConn.GetState().String() == "READY"
-	}
-	
-	func maxInt32(a, b int32) int32 {
-    if a > b {
-        return a
-    }
-    return b
+	log.Println("You are now connected to Chitty-Chat, type away as hard as you are :)")
+	return stream;
 }
+
+//Logs recived messages
+func Listen (stream gRPC.ChittyChat_SubscribeClient){
+	for{
+		message, err := stream.Recv()
+		if err != nil {
+			if err != io.EOF{
+				fmt.Println(err);
+			}
+			//Condition if it is a server messsage
+		} else if message.AuthorName == "server"{
+			t = maxInt32(t, message.LamportTimestamp) + 1;
+			log.Println(message.Text);
+			//Formats increments the lokal timestamp and formats the message
+		} else {
+			t = maxInt32(t, message.LamportTimestamp) + 1;
+			log.Println("Timestamp" , t , message.AuthorName , ": " , message.Text);
+		}
+	}
+}
+
+func Publish (stream gRPC.ChittyChat_SubscribeClient){
+	reader := bufio.NewReader(os.Stdin)
+
+	for{
+		var inputText, _ = reader.ReadString('\n')
+		inputText = strings.TrimRight(inputText,"\n")
+
+		if 128 > utf8.RuneCountInString(inputText){
+			t = t+1;
+			publishMessage := &gRPC.Message{
+				AuthorName: userName,
+				Text: inputText,
+				LamportTimestamp: t}
+		
+			stream.Send(publishMessage)
+		} else {
+			fmt.Println("!Maximum 128 characters allowed!")
+		}
+
+	}
+		
+}
+
+
+func ConnectToServer(){
+	var opts []grpc.DialOption
+	opts = append(
+		opts, grpc.WithBlock(), 
+		grpc.WithTransportCredentials(insecure.NewCredentials()),	
+	)
+	
+	conn, err := grpc.Dial("10.26.26.4:5400", opts...)
+	if err != nil {
+		log.Printf("Fail to Dial : %v", err)
+		return
+	}
+	
+	server = gRPC.NewChittyChatClient(conn)
+	ServerConn = conn
+	log.Println("the connection is: ", conn.GetState().String())
+}
+
+func maxInt32(a, b int32) int32 {
+		if a > b {
+			return a
+		}
+		return b
+	}
+
+func conReady(s gRPC.ChittyChatClient) bool {
+	return ServerConn.GetState().String() == "READY"
+}
+	
+	
 	
 	
 	

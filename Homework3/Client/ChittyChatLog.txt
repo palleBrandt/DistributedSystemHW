@@ -1,0 +1,4 @@
+2023/10/30 15:13:13 the connection is:  READY
+2023/10/30 15:13:13 You are now connected to Chitty-Chat, type away as hard as you are :)
+2023/10/30 15:13:13 Participant lukaspallesen joined Chitty-Chat at Lamport time: 1
+2023/10/30 15:13:47 Timestamp 3 lukaspallesen :  hello
