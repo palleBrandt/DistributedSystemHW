@@ -88,7 +88,7 @@ func (s *Server) Chat(stream gRPC.ChittyChat_ChatServer) error {
                 close(messageChan)
                 return
             }
-			s.savedMessages.add(message)
+			s.savedMessages = append(s.savedMessages, message);
             messageChan <- message
         }
     }()
