@@ -53,7 +53,7 @@ func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
         if err != nil {
             fmt.Println(err);
         }
-	s.t = maxInt32(t, clientMessage.LamportTimestamp) + 1
+	s.t = maxInt32(s.t, clientMessage.LamportTimestamp) + 1
 	s.Join(clientMessage); //Join message is called with the client message. This is a method that handles the broadcasting of "somebody has joined"
 
 
