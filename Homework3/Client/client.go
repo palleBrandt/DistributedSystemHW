@@ -38,20 +38,25 @@ func main(){
 	file, _:= os.Create("ChittyChatLog.txt")
 	log.SetOutput(file);
 
-	// ClientUser := &gRPC.Client{Name: userName}
 	ConnectToServer()
-	//Initialize the stream
+	//Initialize the stream - setup streams for conecting with the server. This is to recieve broadcastet messages, and send messages.
 	stream := SubscribeChittyChat();
+
+	//Send an initial join message. Telling the server "hey this is my name, im the one on the other side of the stream"
+	//this is so the server know who is joining / leaving.
 	joinMessage := &gRPC.Message{
 					AuthorName: userName,
 					Text: ""}
 			
 				stream.Send(joinMessage)
 
+	//Concurrently listen for incoming messages to log
 	go Listen(stream);
 
+	//Concurrently listen for typed messages in console that should be published to server.
 	go Publish(stream);
 
+	//This makes sure our client runs until we terminate it.
 	select {}
 }
 	
@@ -69,38 +74,44 @@ func SubscribeChittyChat() gRPC.ChittyChat_SubscribeClient{
 
 //Logs recived messages
 func Listen (stream gRPC.ChittyChat_SubscribeClient){
+	//Loop listens for incoming broadcasted messages (from server)
 	for{
 		message, err := stream.Recv()
 		if err != nil {
 			if err != io.EOF{
 				fmt.Println(err);
 			}
-			//Condition if it is a server messsage
+			//Condition if it is a server messsage. This handles the formatting of how we look at join and leave messages from server.
 		} else if message.AuthorName == "server"{
+			//Formats increments the lokal timestamp and formats the message
 			t = maxInt32(t, message.LamportTimestamp) + 1;
 			log.Println(message.Text);
-			//Formats increments the lokal timestamp and formats the message
 		} else {
+			//Formats increments the lokal timestamp and formats the message
 			t = maxInt32(t, message.LamportTimestamp) + 1;
 			log.Println("Timestamp" , t , message.AuthorName , ": " , message.Text);
 		}
 	}
 }
 
+//published messages
 func Publish (stream gRPC.ChittyChat_SubscribeClient){
 	reader := bufio.NewReader(os.Stdin)
 
+	//Listen for messages typed in console
 	for{
 		var inputText, _ = reader.ReadString('\n')
 		inputText = strings.TrimRight(inputText,"\n")
 
+		//Checks if message is less that 128 characters
 		if 128 > utf8.RuneCountInString(inputText){
 			t = t+1;
 			publishMessage := &gRPC.Message{
 				AuthorName: userName,
 				Text: inputText,
 				LamportTimestamp: t}
-		
+			
+			//sends the message to the server.
 			stream.Send(publishMessage)
 		} else {
 			fmt.Println("!Maximum 128 characters allowed!")

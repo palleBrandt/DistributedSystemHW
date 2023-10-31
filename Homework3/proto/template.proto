@@ -12,7 +12,3 @@ message Message {
     string text = 2;
     int32 lamportTimestamp = 3;
 }
-
-message Client {
-    string name = 1;
-}

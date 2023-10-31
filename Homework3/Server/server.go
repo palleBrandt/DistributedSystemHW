@@ -2,9 +2,6 @@ package main
 
 import (
 
-	// This has to be the same as the go.mod module,
-	// followed by the path to the folder the proto file is in.
-
 	"net"
 	"sync"
 	"fmt"
@@ -42,29 +39,34 @@ type Server struct {
 	t int32;
 }
 
-// Lets all users know that a new user has join. Sends a stream to the newly
-// join user, on which it now can recive new messages, and fills it with
-// all registered messages.
+//is called when a client joins the "chitty chat". This method is bidirectional streaming. On the client side the stream is saved 
+// and used to send messages. The stream returned on the client side, is used to publish messages to the server, and to send an initial join message.
+// This is the core of functionality in chitty chat.
 func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
 
 	s.Lock();
 	s.clients = append(s.clients, stream);
 	s.Unlock();
 
-	 clientMessage, err := stream.Recv() // Receive a chat message from the client
+	 clientMessage, err := stream.Recv() // Receive a an initial chat message sent by the client after subscription. This is used solely to identify the
+	 //client in this stream.
         if err != nil {
             fmt.Println(err);
         }
-	s.Join(clientMessage);
+	s.Join(clientMessage); //Join message is called with the client message. This is a method that handles the broadcasting of "somebody has joined"
 
+
+	//This loop listens for incoming messages being published form the client.
 	for {
-        message, err := stream.Recv() // Receive a chat message from the client
+        message, err := stream.Recv()
+		//If the error is not null, we assume that the connection to the client is lost. AKA the client has disconnected
         if err != nil {
             s.Lock()
             for i, client := range s.clients {
                 if client == stream {
-                    s.clients = append(s.clients[:i], s.clients[i+1:]...) // Remove the disconnected client
-					s.Leave(clientMessage)
+					//Therefore the client is removed from the saved clients (streams) so we do not try to publish to it.
+                    s.clients = append(s.clients[:i], s.clients[i+1:]...) 
+					s.Leave(clientMessage) //Leave method is called, to broadcast the "somebody left" message.
                     break
                 }
             }
