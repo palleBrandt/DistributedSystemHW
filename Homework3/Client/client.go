@@ -87,10 +87,12 @@ func Listen (stream gRPC.ChittyChat_SubscribeClient){
 		} else if message.AuthorName == "server"{
 			//Formats increments the lokal timestamp and formats the message
 			t = maxInt32(t, message.LamportTimestamp) + 1;
+			fmt.Println(t);
 			log.Println(message.Text);
 		} else {
 			//Formats increments the lokal timestamp and formats the message
 			t = maxInt32(t, message.LamportTimestamp) + 1;
+			fmt.Println(t);
 			log.Println("Timestamp" , t , message.AuthorName , ": " , message.Text);
 		}
 	}
@@ -131,7 +133,7 @@ func ConnectToServer(){
 		grpc.WithTransportCredentials(insecure.NewCredentials()),	
 	)
 	
-	conn, err := grpc.Dial("localhost:5400", opts...)
+	conn, err := grpc.Dial("192.168.43.179:5400", opts...)
 	if err != nil {
 		log.Printf("Fail to Dial : %v", err)
 		return

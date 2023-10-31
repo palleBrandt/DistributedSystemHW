@@ -88,7 +88,7 @@ func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
 func (s *Server) Join (message *gRPC.Message) error{
 	//Increments timestamp for when a client joins the server
 	s.t ++;
-	joinMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " joined Chitty-Chat at Lamport time: " + strconv.FormatInt(int64(s.t), 10)};
+	joinMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " joined Chitty-Chat at Lamport time: " + strconv.FormatInt(int64(s.t), 10), LamportTimestamp: s.t};
 	s.broadcast(joinMessage);
 	return nil
 }
@@ -97,7 +97,7 @@ func (s *Server) Join (message *gRPC.Message) error{
 func (s *Server) Leave (message *gRPC.Message) error{ 
 	//Increments timestamp for when a client leaves the server
 	s.t ++;
-	leaveMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " left Chitty-Chat at Lamport time: " + strconv.FormatInt(int64(s.t), 10)};
+	leaveMessage := &gRPC.Message{AuthorName: "server", Text: "Participant " + message.AuthorName + " left Chitty-Chat at Lamport time: " + strconv.FormatInt(int64(s.t), 10), LamportTimestamp: s.t};
 	s.broadcast(leaveMessage);
 	return nil
 }
