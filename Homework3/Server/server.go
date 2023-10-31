@@ -65,7 +65,7 @@ func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
             for i, client := range s.clients {
                 if client == stream {
 					//Therefore the client is removed from the saved clients (streams) so we do not try to publish to it.
-                    s.clients = append(s.clients[:i], s.clients[i+1:]...) 
+                    s.clients = append(s.clients[:i], s.clients[i+1:]...)//Append everything up til i, append everything after.
 					s.Leave(clientMessage) //Leave method is called, to broadcast the "somebody left" message.
                     break
                 }
