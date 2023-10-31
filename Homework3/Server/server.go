@@ -80,6 +80,8 @@ func (s *Server) Subscribe (stream gRPC.ChittyChat_SubscribeServer) error {
         s.Unlock()
 		//Increments timestamp for sending a message
 		s.t ++;
+		//Updates the messages timestamp
+		message.LamportTimestamp = s.t;
         s.broadcast(message) // Broadcast the new message to all connected clients
     }
 }
