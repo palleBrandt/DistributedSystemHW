@@ -43,12 +43,14 @@ func main(){
 	stream := SubscribeChittyChat();
 
 	//Send an initial join message. Telling the server "hey this is my name, im the one on the other side of the stream"
-	//this is so the server know who is joining / leaving.
+	//this is so the server know who is joining / leaving. This is an internal event, which increments the lokal timestamp.
+	t++;
 	joinMessage := &gRPC.Message{
 					AuthorName: userName,
-					Text: ""}
-			
-				stream.Send(joinMessage)
+					Text: "",
+					LamportTimestamp: t}
+		
+	stream.Send(joinMessage)
 
 	//Concurrently listen for incoming messages to log
 	go Listen(stream);
